@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:13.3
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "user123"
+      POSTGRES_PASSWORD: "pass123"
+      POSTGRES_HOSTNAME: "localhost"
+    ports:
+      - "5432:5432"
+    volumes:
+      - "data:/var/lib/postgresql/data"
+volumes:
+  data:
