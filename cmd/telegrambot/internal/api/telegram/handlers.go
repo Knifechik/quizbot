@@ -4,25 +4,45 @@ import (
 	"context"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"log"
+	"log/slog"
 	"strconv"
 	"strings"
 	"tgbot/cmd/telegrambot/internal/app"
 )
 
 func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
-
-	upd := a.app.GetInfo(ctx, int(update.CallbackQuery.Message.Message.Chat.ID))
-
 	answer := update.CallbackQuery.Data
+
+	upd, err := a.app.GetInfo(ctx, int(update.CallbackQuery.Message.Message.Chat.ID))
+	if err != nil {
+		slog.Error("app.GetInfo:", err)
+		return
+	}
 
 	if !strings.Contains(answer, "button_0") {
 		a.app.PlusCounter(ctx, upd)
 		a.app.CheckAnswer(ctx, answer, upd)
 	}
 
-	upd = a.app.GetInfo(ctx, int(update.CallbackQuery.Message.Message.Chat.ID))
+	upd, err = a.app.GetInfo(ctx, int(update.CallbackQuery.Message.Message.Chat.ID))
+	if err != nil {
+		slog.Error("app.GetInfo:", err)
+		return
+	}
 
+	log.Println(upd.CountRightAnswer)
 	if a.app.CheckFinished(ctx, int(update.CallbackQuery.Message.Message.Chat.ID)) {
+		a.app.SaveMessage(ctx, app.UserInfo{
+			ChatID:           upd.ChatID,
+			QuestNumber:      upd.QuestNumber,
+			LastMessageID:    upd.LastMessageID,
+			CountRightAnswer: upd.CountRightAnswer,
+			Answer:           upd.Answer,
+			Finished:         upd.Finished,
+			Quests:           upd.Quests,
+			UserAnswers:      append(upd.UserAnswers[1:], answer),
+		})
 		b.EditMessageText(ctx, &bot.EditMessageTextParams{
 			ChatID:    upd.ChatID,
 			MessageID: upd.LastMessageID,
@@ -32,23 +52,13 @@ func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Up
 		return
 	}
 
-	kb := &models.InlineKeyboardMarkup{
-		InlineKeyboard: [][]models.InlineKeyboardButton{
-			{
-				{Text: upd.Quests[upd.QuestNumber].Answers[0], CallbackData: "button_1"},
-				{Text: upd.Quests[upd.QuestNumber].Answers[1], CallbackData: "button_2"},
-			}, {
-				{Text: upd.Quests[upd.QuestNumber].Answers[2], CallbackData: "button_3"},
-				{Text: upd.Quests[upd.QuestNumber].Answers[3], CallbackData: "button_4"},
-			},
-		},
-	}
+	keyboard := createKeyboard(upd.Quests[upd.QuestNumber].Answers)
 
 	message, _ := b.EditMessageText(ctx, &bot.EditMessageTextParams{
 		ChatID:      upd.ChatID,
 		MessageID:   upd.LastMessageID,
 		Text:        upd.Quests[upd.QuestNumber].Quest,
-		ReplyMarkup: kb,
+		ReplyMarkup: keyboard,
 	})
 
 	b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
@@ -56,7 +66,7 @@ func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Up
 		ShowAlert:       false,
 	})
 
-	a.app.SaveMessage(ctx, app.UserInfo{
+	err = a.app.SaveMessage(ctx, app.UserInfo{
 		ChatID:           upd.ChatID,
 		QuestNumber:      upd.QuestNumber,
 		LastMessageID:    message.ID,
@@ -64,7 +74,12 @@ func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Up
 		Answer:           upd.Answer,
 		Finished:         upd.Finished,
 		Quests:           upd.Quests,
+		UserAnswers:      append(upd.UserAnswers, answer),
 	})
+	if err != nil {
+		slog.Error("app.SaveMessage:", err)
+		return
+	}
 
 }
 
@@ -92,6 +107,10 @@ func (a *api) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Upd
 		ReplyMarkup: kb,
 	})
 
-	a.app.CreateChat(ctx, int(update.Message.Chat.ID), message.ID)
+	err := a.app.CreateChat(ctx, int(update.Message.Chat.ID), message.ID)
+	if err != nil {
+		slog.Error("app.CreateChat:", err)
+		return
+	}
 
 }

@@ -3,12 +3,12 @@ package app
 import "context"
 
 type Repo interface {
-	CheckChatExist(context.Context, int) bool
-	CreateChat(context.Context, UserInfo)
-	SaveMessage(context.Context, UserInfo)
-	GetInfo(context.Context, int) UserInfo
-	CheckFinished(context.Context, int) bool
-	PlusCounter(context.Context, UserInfo)
-	PlusAnswer(context.Context, UserInfo)
-	SetFinished(context.Context, UserInfo)
+	CheckChatExist(context.Context, int) (bool, error)
+	CreateChat(context.Context, UserInfo) error
+	SaveMessage(context.Context, UserInfo) error
+	GetInfo(context.Context, int) (UserInfo, error)
+	CheckFinished(context.Context, int) (bool, error)
+	PlusCounter(context.Context, UserInfo) error
+	PlusAnswer(context.Context, UserInfo) error
+	SetFinished(context.Context, UserInfo) error
 }

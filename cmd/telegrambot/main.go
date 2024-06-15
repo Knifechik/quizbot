@@ -12,7 +12,7 @@ import (
 
 // Send any text message to the bot after the bot has been started
 
-var token = "7285075184:AAFpkz2skzgxN0nV2kndLiRoLGqHVKryBMs"
+var token = ""
 
 func main() {
 

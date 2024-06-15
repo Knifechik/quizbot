@@ -8,4 +8,5 @@ type UserInfo struct {
 	Answer           string
 	Finished         bool
 	Quests           []Questions
+	UserAnswers      []string
 }

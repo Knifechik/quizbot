@@ -3,18 +3,18 @@ package telegram
 import (
 	"context"
 	"github.com/go-telegram/bot"
+	"log"
 	"tgbot/cmd/telegrambot/internal/app"
 )
 
 type application interface {
 	CheckChatExist(context.Context, int) bool
 	CheckFinished(context.Context, int) bool
-	CreateChat(context.Context, int, int)
-	SaveMessage(context.Context, app.UserInfo)
-	GetInfo(context.Context, int) app.UserInfo
-	PlusCounter(context.Context, app.UserInfo)
-	//GetQuestions(context.Context, app.UserInfo) app.UserInfo
-	CheckAnswer(context.Context, string, app.UserInfo)
+	CreateChat(context.Context, int, int) error
+	SaveMessage(context.Context, app.UserInfo) error
+	GetInfo(context.Context, int) (app.UserInfo, error)
+	PlusCounter(context.Context, app.UserInfo) error
+	CheckAnswer(context.Context, string, app.UserInfo) error
 }
 
 type api struct {
@@ -28,11 +28,11 @@ func New(a application, token string) *bot.Bot {
 
 	opts := []bot.Option{
 		bot.WithDefaultHandler(api.DefaultHandler),
-		bot.WithCallbackQueryDataHandler("button", bot.MatchTypePrefix, api.CallbackHandler),
+		bot.WithCallbackQueryDataHandler("", bot.MatchTypePrefix, api.CallbackHandler),
 	}
 	b, err := bot.New(token, opts...)
 	if nil != err {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	return b

@@ -7,6 +7,7 @@ create table user_table
     right_answer int,
     finished     boolean not null default false,
     quests       TEXT,
+    answers      TEXT,
 
     primary key (id)
 );

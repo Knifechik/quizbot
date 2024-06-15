@@ -9,6 +9,7 @@ type UserInfo struct {
 	CountRightAnswer int  `db:"right_answer"`
 	Finished         bool `db:"finished"`
 	Quests           []Questions
+	Answers          []string `db:"answers"`
 }
 type Questions struct {
 	Quest      string
