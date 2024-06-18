@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"tgbot/cmd/telegrambot/internal/adapters/repo"
@@ -23,8 +24,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
-
+	defer func() {
+		err = db.Close()
+		if err != nil {
+			slog.Warn("db.Close:", err)
+		}
+	}()
 	myapp := app.New(db)
 	bot := telegram.New(myapp, token)
 

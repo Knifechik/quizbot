@@ -81,23 +81,19 @@ func (a *App) CheckAnswer(ctx context.Context, answer string, chatID int) (UserI
 	log.Println(quests.GoodAnswer, "=+=+=", answer)
 
 	if quests.GoodAnswer == answer {
-
 		user.CountRightAnswer++
-
-		err = a.repo.Update(ctx, user)
-		if err != nil {
-			return UserInfo{}, fmt.Errorf("repo.PlusAnswer: %v", err)
-		}
 	}
 
 	if user.QuestNumber+1 == len(user.Quests) {
 		user.Finished = true
-		err = a.repo.Update(ctx, user)
-		if err != nil {
-			return UserInfo{}, fmt.Errorf("repo.SetFinished: %v", err)
-		}
 	}
+
 	user.QuestNumber++
+
+	err = a.repo.Update(ctx, user)
+	if err != nil {
+		return UserInfo{}, fmt.Errorf("repo.SetFinished: %v", err)
+	}
 
 	return user, nil
 }

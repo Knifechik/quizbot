@@ -10,10 +10,10 @@ import (
 )
 
 const (
-	CallbackButton_1 = "1"
-	CallbackButton_2 = "2"
-	CallbackButton_3 = "3"
-	CallbackButton_4 = "4"
+	callbackButton1 = "1"
+	CallbackButton2 = "2"
+	CallbackButton3 = "3"
+	CallbackButton4 = "4"
 )
 
 func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -32,7 +32,7 @@ func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Up
 	}
 
 	if finish {
-		err := a.app.Save(ctx, app.UserInfo{
+		err = a.app.Save(ctx, app.UserInfo{
 			ChatID:           upd.ChatID,
 			QuestNumber:      upd.QuestNumber,
 			LastMessageID:    upd.LastMessageID,
@@ -42,8 +42,10 @@ func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Up
 			Quests:           upd.Quests,
 		})
 		if err != nil {
+			slog.Error("app.Save:", err)
 			return
 		}
+
 		_, err = b.EditMessageText(ctx, &bot.EditMessageTextParams{
 			ChatID:    upd.ChatID,
 			MessageID: upd.LastMessageID,
@@ -54,17 +56,18 @@ func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Up
 			slog.Error("app.EditMessageText:", err)
 			return
 		}
+
 		return
 	}
 
 	keyboard := models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
 			{
-				{Text: upd.Quests[upd.QuestNumber].Answers[0], CallbackData: CallbackButton_1},
-				{Text: upd.Quests[upd.QuestNumber].Answers[1], CallbackData: CallbackButton_2},
+				{Text: upd.Quests[upd.QuestNumber].Answers[0], CallbackData: callbackButton1},
+				{Text: upd.Quests[upd.QuestNumber].Answers[1], CallbackData: CallbackButton2},
 			}, {
-				{Text: upd.Quests[upd.QuestNumber].Answers[2], CallbackData: CallbackButton_3},
-				{Text: upd.Quests[upd.QuestNumber].Answers[3], CallbackData: CallbackButton_4},
+				{Text: upd.Quests[upd.QuestNumber].Answers[2], CallbackData: CallbackButton3},
+				{Text: upd.Quests[upd.QuestNumber].Answers[3], CallbackData: CallbackButton4},
 			},
 		},
 	}
@@ -98,7 +101,6 @@ func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Up
 		Finished:         upd.Finished,
 		Quests:           upd.Quests,
 	})
-
 	if err != nil {
 		slog.Error("app.Update:", err)
 		return
@@ -111,10 +113,14 @@ func (a *api) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Upd
 	err := a.app.CheckExist(ctx, int(update.Message.Chat.ID))
 
 	if err != nil {
-		b.DeleteMessage(ctx, &bot.DeleteMessageParams{
+		_, err = b.DeleteMessage(ctx, &bot.DeleteMessageParams{
 			ChatID:    update.Message.Chat.ID,
 			MessageID: update.Message.ID,
 		})
+		if err != nil {
+			slog.Error("app.DeleteMessage:", err)
+			return
+		}
 		return
 	}
 
@@ -132,11 +138,15 @@ func (a *api) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Upd
 		},
 	}
 
-	message, _ := b.SendMessage(ctx, &bot.SendMessageParams{
+	message, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID:      update.Message.Chat.ID,
 		Text:        "Попробуй решить наши задачки, там еще всякое добро, короче разбирайся, а я тебя писать буду.",
 		ReplyMarkup: kb,
 	})
+	if err != nil {
+		slog.Error("app.SendMessage:", err)
+		return
+	}
 
 	err = a.app.Save(ctx, app.UserInfo{
 		ChatID:           user.ChatID,
