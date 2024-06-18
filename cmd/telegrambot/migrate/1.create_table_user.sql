@@ -6,8 +6,7 @@ create table user_table
     last_message int unique,
     right_answer int,
     finished     boolean not null default false,
-    quests       TEXT,
-    answers      TEXT,
+    quests       json,
 
     primary key (id)
 );

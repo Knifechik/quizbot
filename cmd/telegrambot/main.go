@@ -19,7 +19,10 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	db := repo.New(ctx)
+	db, err := repo.New(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer db.Close()
 
 	myapp := app.New(db)

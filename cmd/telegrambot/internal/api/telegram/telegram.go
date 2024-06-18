@@ -8,13 +8,13 @@ import (
 )
 
 type application interface {
-	CheckChatExist(context.Context, int) bool
-	CheckFinished(context.Context, int) bool
-	CreateChat(context.Context, int, int) error
-	SaveMessage(context.Context, app.UserInfo) error
-	GetInfo(context.Context, int) (app.UserInfo, error)
-	PlusCounter(context.Context, app.UserInfo) error
-	CheckAnswer(context.Context, string, app.UserInfo) error
+	Create(context.Context, int) (app.UserInfo, error)
+	Save(context.Context, app.UserInfo) error
+	Get(context.Context, int) (app.UserInfo, error)
+	CheckExist(context.Context, int) error
+	CheckFinished(context.Context, int) (bool, error)
+	CheckAnswer(context.Context, string, int) (app.UserInfo, error)
+	//SaveAnswer(context.Context, app.UserInfo, string, int) error
 }
 
 type api struct {
