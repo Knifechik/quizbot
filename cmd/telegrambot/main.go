@@ -24,14 +24,19 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer func() {
 		err = db.Close()
 		if err != nil {
 			slog.Warn("db.Close:", err)
 		}
 	}()
+
 	myapp := app.New(db)
-	bot := telegram.New(myapp, token)
+	bot, err := telegram.New(myapp, token)
+	if err != nil {
+		log.Fatal("app.New:", err)
+	}
 
 	log.Println("Bot is now running.  Press CTRL-C to exit.")
 

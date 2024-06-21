@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"log/slog"
@@ -17,18 +18,31 @@ const (
 )
 
 func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	err := a.CallbackHandle(ctx, b, update)
+	if err != nil {
+		slog.Error("api.CallbackHandle", err)
+	}
+
+}
+
+func (a *api) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	err := a.DefaultHandle(ctx, b, update)
+	if err != nil {
+		slog.Error("api.DefaultHandle:", err)
+	}
+}
+
+func (a *api) CallbackHandle(ctx context.Context, b *bot.Bot, update *models.Update) error {
 	answer := update.CallbackQuery.Data
 
 	upd, err := a.app.CheckAnswer(ctx, answer, int(update.CallbackQuery.Message.Message.Chat.ID))
 	if err != nil {
-		slog.Error("app.CheckAnswer:", err)
-		return
+		return fmt.Errorf("app.CheckAnswer %w", err)
 	}
 
 	finish, err := a.app.CheckFinished(ctx, int(update.CallbackQuery.Message.Message.Chat.ID))
 	if err != nil {
-		slog.Error("app.CheckFinished:", err)
-		return
+		return fmt.Errorf("app.CheckFinished %w", err)
 	}
 
 	if finish {
@@ -42,8 +56,7 @@ func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Up
 			Quests:           upd.Quests,
 		})
 		if err != nil {
-			slog.Error("app.Save:", err)
-			return
+			return fmt.Errorf("app.Save %w", err)
 		}
 
 		_, err = b.EditMessageText(ctx, &bot.EditMessageTextParams{
@@ -54,10 +67,10 @@ func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Up
 		})
 		if err != nil {
 			slog.Error("app.EditMessageText:", err)
-			return
+			return fmt.Errorf("app.EditMessageText %w", err)
 		}
 
-		return
+		return nil
 	}
 
 	keyboard := models.InlineKeyboardMarkup{
@@ -79,8 +92,7 @@ func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Up
 		ReplyMarkup: keyboard,
 	})
 	if err != nil {
-		slog.Error("b.EditMessageText:", err)
-		return
+		return fmt.Errorf("b.EditMessageText %w", err)
 	}
 
 	_, err = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
@@ -88,8 +100,7 @@ func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Up
 		ShowAlert:       false,
 	})
 	if err != nil {
-		slog.Error("b.AnswerCallbackQuery:", err)
-		return
+		return fmt.Errorf("b.AnswerCallbackQuery %w", err)
 	}
 
 	err = a.app.Save(ctx, app.UserInfo{
@@ -102,32 +113,26 @@ func (a *api) CallbackHandler(ctx context.Context, b *bot.Bot, update *models.Up
 		Quests:           upd.Quests,
 	})
 	if err != nil {
-		slog.Error("app.Update:", err)
-		return
+		return fmt.Errorf("app.Update %w", err)
 	}
 
+	return nil
 }
 
-func (a *api) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+func (a *api) DefaultHandle(ctx context.Context, b *bot.Bot, update *models.Update) error {
 
-	err := a.app.CheckExist(ctx, int(update.Message.Chat.ID))
+	user, err := a.app.Create(ctx, int(update.Message.Chat.ID))
 
 	if err != nil {
 		_, err = b.DeleteMessage(ctx, &bot.DeleteMessageParams{
 			ChatID:    update.Message.Chat.ID,
 			MessageID: update.Message.ID,
 		})
-		if err != nil {
-			slog.Error("app.DeleteMessage:", err)
-			return
-		}
-		return
-	}
 
-	user, err := a.app.Create(ctx, int(update.Message.Chat.ID))
-	if err != nil {
-		slog.Error("app.Create:", err)
-		return
+		if err != nil {
+			return fmt.Errorf("app.DeleteMessage: %w", err)
+		}
+		return fmt.Errorf("app.Create: %w", err)
 	}
 
 	kb := &models.InlineKeyboardMarkup{
@@ -144,8 +149,7 @@ func (a *api) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Upd
 		ReplyMarkup: kb,
 	})
 	if err != nil {
-		slog.Error("app.SendMessage:", err)
-		return
+		return fmt.Errorf("app.SendMessage: %w", err)
 	}
 
 	err = a.app.Save(ctx, app.UserInfo{
@@ -158,8 +162,8 @@ func (a *api) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Upd
 		Quests:           user.Quests,
 	})
 	if err != nil {
-		slog.Error("app.Update:", err)
-		return
+		return fmt.Errorf("app.Update: %w", err)
 	}
 
+	return nil
 }

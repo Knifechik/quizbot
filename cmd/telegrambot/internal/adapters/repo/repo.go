@@ -89,7 +89,7 @@ func (r *Repo) Update(ctx context.Context, user app.UserInfo) error {
 }
 
 // GetInfo TODO refact
-func (r *Repo) Get(ctx context.Context, chatID int) (app.UserInfo, error) {
+func (r *Repo) Get(ctx context.Context, chatID int) (*app.UserInfo, error) {
 	update := UserInfo{}
 	var marsh []byte
 	var quest []app.Questions
@@ -98,12 +98,12 @@ func (r *Repo) Get(ctx context.Context, chatID int) (app.UserInfo, error) {
 	row := r.sql.QueryRowContext(ctx, query, chatID)
 	err := row.Scan(&update.ChatID, &update.QuestNumber, &update.LastMessageID, &update.CountRightAnswer, &update.Finished, &marsh)
 	if err != nil {
-		return app.UserInfo{}, fmt.Errorf("sql.QueryRowContext: %w", convertErr(err))
+		return nil, fmt.Errorf("sql.QueryRowContext: %w", convertErr(err))
 	}
 
 	err = json.Unmarshal(marsh, &quest)
 	if err != nil {
-		return app.UserInfo{}, fmt.Errorf("json.Unmarshal: %w", err)
+		return nil, fmt.Errorf("json.Unmarshal: %w", err)
 	}
 
 	user := update.convert(quest)

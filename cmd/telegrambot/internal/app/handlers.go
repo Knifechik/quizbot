@@ -8,15 +8,10 @@ import (
 	"log/slog"
 )
 
-func (a *App) CheckExist(ctx context.Context, chatID int) error {
-	_, err := a.repo.Get(ctx, chatID)
-	switch {
-	case errors.Is(err, ErrNotFound):
-		return nil
-	default:
-		return fmt.Errorf("chat exist or repo's error: %w", err)
-	}
-}
+//func (a *App) CheckExist(ctx context.Context, chatID int) error {
+//	_, err := a.repo.Get(ctx, chatID)
+//
+//}
 
 func (a *App) CheckFinished(ctx context.Context, chatID int) (bool, error) {
 	user, err := a.repo.Get(ctx, chatID)
@@ -26,21 +21,27 @@ func (a *App) CheckFinished(ctx context.Context, chatID int) (bool, error) {
 	return user.Finished, nil
 }
 
-func (a *App) Create(ctx context.Context, chatID int) (UserInfo, error) {
-
-	upd := UserInfo{
-		ChatID:           chatID,
-		QuestNumber:      0,
-		LastMessageID:    0,
-		CountRightAnswer: 0,
-		Answer:           "",
-		Finished:         false,
-		Quests:           getQuestion(),
+func (a *App) Create(ctx context.Context, chatID int) (*UserInfo, error) {
+	upd, err := a.repo.Get(ctx, chatID)
+	switch {
+	case errors.Is(err, ErrNotFound):
+		err = nil
+	case err != nil:
+		return nil, fmt.Errorf("repo.Get: %w", err)
 	}
 
-	err := a.repo.Create(ctx, upd)
+	if upd != nil {
+		return nil, ErrAlreadyExists
+	}
+
+	upd = &UserInfo{
+		ChatID: chatID,
+		Quests: getQuestion(),
+	}
+
+	err = a.repo.Create(ctx, *upd)
 	if err != nil {
-		return UserInfo{}, fmt.Errorf("repo.Create: %w", err)
+		return nil, fmt.Errorf("repo.Create: %w", err)
 	}
 
 	return upd, nil
@@ -56,19 +57,19 @@ func (a *App) Save(ctx context.Context, user UserInfo) error {
 	return nil
 }
 
-func (a *App) Get(ctx context.Context, chatID int) (UserInfo, error) {
+func (a *App) Get(ctx context.Context, chatID int) (*UserInfo, error) {
 	upd, err := a.repo.Get(ctx, chatID)
 	if err != nil {
-		return UserInfo{}, fmt.Errorf("repo.Get: %v", err)
+		return nil, fmt.Errorf("repo.Get: %v", err)
 	}
 
 	return upd, nil
 }
 
-func (a *App) CheckAnswer(ctx context.Context, answer string, chatID int) (UserInfo, error) {
+func (a *App) CheckAnswer(ctx context.Context, answer string, chatID int) (*UserInfo, error) {
 	user, err := a.repo.Get(ctx, chatID)
 	if err != nil {
-		return UserInfo{}, fmt.Errorf("repo.Get: %v", err)
+		return nil, fmt.Errorf("repo.Get: %v", err)
 	}
 
 	if answer == "button_0" {
@@ -90,9 +91,9 @@ func (a *App) CheckAnswer(ctx context.Context, answer string, chatID int) (UserI
 
 	user.QuestNumber++
 
-	err = a.repo.Update(ctx, user)
+	err = a.repo.Update(ctx, *user)
 	if err != nil {
-		return UserInfo{}, fmt.Errorf("repo.SetFinished: %v", err)
+		return nil, fmt.Errorf("repo.SetFinished: %v", err)
 	}
 
 	return user, nil

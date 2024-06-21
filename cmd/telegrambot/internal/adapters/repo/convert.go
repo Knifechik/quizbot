@@ -18,8 +18,8 @@ type Questions struct {
 	UserAnswer string
 }
 
-func (u *UserInfo) convert(q []app.Questions) app.UserInfo {
-	res := app.UserInfo{
+func (u *UserInfo) convert(q []app.Questions) *app.UserInfo {
+	res := &app.UserInfo{
 		ChatID:           u.ChatID,
 		QuestNumber:      u.QuestNumber,
 		LastMessageID:    u.LastMessageID,
